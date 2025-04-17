@@ -15,6 +15,21 @@ type BuildingType =
   | 'stadium'
   | 'library';
 
+const SYNERGY: Record<BuildingType, Partial<Record<BuildingType, number>>> = {
+  house: { park: 2 },
+  park: { house: 2, factory: -3 },
+  office: { skyscraper: 2 },
+  skyscraper: { office: 2 },
+  shop: { stadium: 2 },
+  stadium: { shop: 2 },
+  hospital: { school: 1 },
+  school: { hospital: 1 },
+  factory: { park: -3 },
+  library: {},
+};
+
+
+
 const BUILDINGS: { type: BuildingType; emoji: string; score: number }[] = [
   { type: 'house', emoji: '🏠', score: 3 },
   { type: 'office', emoji: '🏢', score: 2 },
@@ -129,9 +144,9 @@ export default function Game() {
 
       {phase === 'finished' && (
         <>
-            <motion.p
+          <motion.p
             initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1,   opacity: 1 }}
+            animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
             className="text-xl font-semibold mb-2 text-red-500"
           >
@@ -154,20 +169,20 @@ function Tray({ selected, onSelect }: TrayProps) {
   return (
     <div className="grid grid-cols-4 gap-2 my-4 max-w-xs mx-auto">
       {BUILDINGS.map((b) => (
-      <motion.button
-      key={b.type}
-      onClick={() => onSelect(b.type)}
-      className={`
+        <motion.button
+          key={b.type}
+          onClick={() => onSelect(b.type)}
+          className={`
         text-3xl aspect-square rounded-md border
         ${selected === b.type ? 'border-blue-600' : 'border-gray-300'}
       `}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      animate={selected === b.type ? { rotate: [0, -5, 5, -5, 0] } : {}}
-      transition={{ duration: 0.4 }}
-    >
-      {b.emoji}
-    </motion.button>
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          animate={selected === b.type ? { rotate: [0, -5, 5, -5, 0] } : {}}
+          transition={{ duration: 0.4 }}
+        >
+          {b.emoji}
+        </motion.button>
       ))}
     </div>
   );
@@ -195,7 +210,7 @@ function Grid({ grid, onCellClick }: GridProps) {
             // ★ 建物はポップイン
             <motion.span
               initial={{ scale: 0, rotate: -30, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0,   opacity: 1 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 300, damping: 18 }}
             >
               {BUILDINGS.find(b => b.type === cell)!.emoji}
@@ -217,45 +232,49 @@ function Grid({ grid, onCellClick }: GridProps) {
 function calculateScore(cells: (BuildingType | null)[]): number {
   let score = 0;
 
-  // 1. 基本スコア合計
-  for (const cell of cells) {
-    if (!cell) continue;
-    const b = BUILDINGS.find((b) => b.type === cell);
-    score += b?.score ?? 0;
+  // 1) 基礎得点
+  cells.forEach(c => {
+    if (c) score += BUILDINGS.find(b => b.type === c)!.score;
+  });
+
+  // 2) 隣接シナジー & ペナルティ
+  for (let i = 0; i < cells.length; i++) {
+    const a = cells[i];
+    if (!a) continue;
+
+    const row = Math.floor(i / 3);
+    const col = i % 3;
+
+    const checkPair = (j: number) => {
+      const b = cells[j];
+      if (!b) return;
+      score += SYNERGY[a][b] ?? 0;   // なければ 0
+    };
+
+    if (col < 2) checkPair(i + 1);   // 右
+    if (row < 2) checkPair(i + 3);   // 下
   }
 
-  // 2. 隣接ボーナス & 3. shop-office シナジー
-  for (let idx = 0; idx < cells.length; idx++) {
-    const cell = cells[idx];
-    if (!cell) continue;
-
-    const row = Math.floor(idx / 3);
-    const col = idx % 3;
-
-    // 右隣チェック
-    if (col < 2 && cells[idx + 1] === cell) {
-      score += 2;
-    }
-    // 下隣チェック
-    if (row < 2 && cells[idx + 3] === cell) {
-      score += 2;
-    }
-    // shop-office シナジー
-    if (cell === 'shop') {
-      if (
-        (col < 2 && cells[idx + 1] === 'office') ||
-        (row < 2 && cells[idx + 3] === 'office')
-      ) {
-        score += 1;
-      }
+  // 3) ラインボーナス
+  const lines = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+    [0, 3, 6], [1, 4, 7], [2, 5, 8], // cols
+  ];
+  for (const [a, b, c] of lines) {
+    if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
+      score += 5;
     }
   }
 
-  // 4. park 数ボーナス
-  const parkCount = cells.filter((c) => c === 'park').length;
-  if (parkCount >= 3) {
-    score += 5;
-  }
+  // 4) 多様性ボーナス
+  const distinct = new Set(cells.filter(Boolean));
+  if (distinct.size >= 6) score += 5;
+
+  // 5) 公園段階制
+  const parks = cells.filter(c => c === 'park').length;
+  if (parks >= 4) score += 8;
+  else if (parks === 3) score += 5;
+  else if (parks === 2) score += 2;
 
   return score;
 }
