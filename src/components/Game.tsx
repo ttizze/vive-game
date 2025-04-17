@@ -45,17 +45,29 @@ const BUILDINGS: { type: BuildingType; emoji: string; score: number }[] = [
 
 function ScoringGuide() {
   return (
-    <div className="max-w-md mx-auto text-left text-sm  p-4 rounded-md my-4">
+    <div className="max-w-md mx-auto text-left text-sm p-4 rounded-md my-4">
       <h2 className="font-semibold mb-2">採点基準</h2>
-      <ul className="list-disc pl-5 space-y-1">
+
+      {/* 基礎得点 */}
+      <ul className="list-disc pl-5 space-y-1 mb-2">
         {BUILDINGS.map((b) => (
           <li key={b.type}>
             {b.emoji} {b.type}: {b.score}点
           </li>
         ))}
-        <li>同じ建物が隣接：1組ごとに +2点</li>
-        <li>🛒 shop と 🏢 office が隣接：+1点</li>
-        <li>🌳 park が3つ以上：+5点</li>
+      </ul>
+
+      {/* ボーナス & ペナルティ */}
+      <ul className="list-disc pl-5 space-y-1">
+        <li>同じ建物が隣接：+2 / ペア</li>
+        <li>🏠 house ＋ 🌳 park：+2</li>
+        <li>🏢 office ＋ 🏙️ skyscraper：+2</li>
+        <li>🛒 shop ＋ 🏟️ stadium：+2</li>
+        <li>🏥 hospital ＋ 🏫 school：+1</li>
+        <li>🏭 factory ＋ 🌳 park：<span className="text-red-500">−3</span></li>
+        <li>同種 3 連 (行 or 列)：+5</li>
+        <li>異なる建物 6 種以上：+5</li>
+        <li>🌳 park 2/3/4+ 個：+2 / +5 / +8</li>
       </ul>
     </div>
   );
