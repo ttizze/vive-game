@@ -13,11 +13,10 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata = {
+export const metadata: Metadata =  {
   title: '10‑Second City',
   description: 'Build a tiny city in 10 seconds!'
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{

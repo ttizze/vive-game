@@ -172,6 +172,13 @@ function Grid({ grid, onCellClick }: GridProps) {
   );
 }
 
+/**
+ * スコア計算：
+ * 1. 各セルの基本スコア加算
+ * 2. 同じ建物が隣接（左右・上下）していたら +2 ボーナス
+ * 3. shop と office の隣接シナジー +1
+ * 4. park が 3つ以上 で +5 ボーナス
+ */
 function calculateScore(cells: (BuildingType | null)[]): number {
   let score = 0;
 
