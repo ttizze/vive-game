@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-
+import { motion } from 'framer-motion';
 type BuildingType =
   | 'house'
   | 'office'
@@ -16,16 +16,16 @@ type BuildingType =
   | 'library';
 
 const BUILDINGS: { type: BuildingType; emoji: string; score: number }[] = [
-  { type: 'house',      emoji: '🏠', score: 3 },
-  { type: 'office',     emoji: '🏢', score: 2 },
-  { type: 'shop',       emoji: '🛒', score: 2 },
-  { type: 'park',       emoji: '🌳', score: 5 },
-  { type: 'factory',    emoji: '🏭', score: 4 },
+  { type: 'house', emoji: '🏠', score: 3 },
+  { type: 'office', emoji: '🏢', score: 2 },
+  { type: 'shop', emoji: '🛒', score: 2 },
+  { type: 'park', emoji: '🌳', score: 5 },
+  { type: 'factory', emoji: '🏭', score: 4 },
   { type: 'skyscraper', emoji: '🏙️', score: 5 },
-  { type: 'school',     emoji: '🏫', score: 3 },
-  { type: 'hospital',   emoji: '🏥', score: 4 },
-  { type: 'stadium',    emoji: '🏟️', score: 4 },
-  { type: 'library',    emoji: '📚', score: 3 },
+  { type: 'school', emoji: '🏫', score: 3 },
+  { type: 'hospital', emoji: '🏥', score: 4 },
+  { type: 'stadium', emoji: '🏟️', score: 4 },
+  { type: 'library', emoji: '📚', score: 3 },
 ];
 
 function ScoringGuide() {
@@ -88,18 +88,39 @@ export default function Game() {
       <h1 className="text-3xl font-bold mb-4">10‑Second City</h1>
 
       {phase === 'idle' && (
-    <>
-      <Button type="button" variant="destructive" size="lg" onClick={startGame} className="btn-primary">
-        Start 10 sec Build!
-      </Button>
-      {/* 採点基準を表示 */}
-      <ScoringGuide />
-    </>
-  )}
+        <>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 180, damping: 14 }}
+          >
+            <Button
+              type="button"
+              variant="destructive"
+              size="lg"
+              onClick={startGame}
+              className="btn-primary"
+            >
+              Start 10 sec Build!
+            </Button>
+          </motion.div>
+          {/* 採点基準を表示 */}
+          <ScoringGuide />
+        </>
+      )}
 
       {phase === 'running' && (
         <>
-          <p className="mb-2 text-lg">Time left: {timeLeft}s</p>
+          <p>Time left:</p><motion.p
+            key={timeLeft}                        // ※ key に timeLeft を入れて一秒毎に再アニメ
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="mb-2 text-4xl"
+          >
+            {timeLeft}s
+          </motion.p>
+
           <Tray selected={selected} onSelect={setSelected} />
           <Grid grid={grid} onCellClick={placeBuilding} />
           <ScoringGuide />
@@ -108,7 +129,14 @@ export default function Game() {
 
       {phase === 'finished' && (
         <>
-          <p className="text-xl font-semibold mb-2">Your city score: {score}</p>
+            <motion.p
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1,   opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            className="text-xl font-semibold mb-2 text-red-500"
+          >
+            Your city score: {score}
+          </motion.p>
           <Grid grid={grid} />
           <Button type="button" variant="destructive" size="lg" onClick={startGame} className="btn-primary mt-4">Play Again</Button>
         </>
@@ -124,21 +152,22 @@ interface TrayProps {
 
 function Tray({ selected, onSelect }: TrayProps) {
   return (
-<div className="grid grid-cols-4 gap-2 my-4 max-w-xs mx-auto">
+    <div className="grid grid-cols-4 gap-2 my-4 max-w-xs mx-auto">
       {BUILDINGS.map((b) => (
-        <button
-          key={b.type}
-          onClick={() => onSelect(b.type)}
-          className={`
-            text-3xl 
-            aspect-square       /* 正方形を強制 */
-            rounded-md 
-            border 
-            ${selected === b.type ? 'border-blue-600' : 'border-gray-300'}
-          `}
-        >
-          {b.emoji}
-        </button>
+      <motion.button
+      key={b.type}
+      onClick={() => onSelect(b.type)}
+      className={`
+        text-3xl aspect-square rounded-md border
+        ${selected === b.type ? 'border-blue-600' : 'border-gray-300'}
+      `}
+      whileHover={{ scale: 1.1 }}
+      whileTap={{ scale: 0.9 }}
+      animate={selected === b.type ? { rotate: [0, -5, 5, -5, 0] } : {}}
+      transition={{ duration: 0.4 }}
+    >
+      {b.emoji}
+    </motion.button>
       ))}
     </div>
   );
@@ -153,21 +182,26 @@ function Grid({ grid, onCellClick }: GridProps) {
   return (
     <div className="grid grid-cols-3 gap-1 justify-center aspect-square">{/* ← gap-2 → gap-1 */}
       {grid.map((cell, idx) => (
-        <button
+        <motion.button
           key={idx}
           onClick={() => onCellClick?.(idx)}
           className="
-            w-14               /* 必要に応じて調整 */
-            aspect-square      /* 正方形を強制 */
-            bg-white 
-            rounded-md 
-            border border-gray-400 
-            flex items-center justify-center 
-            text-3xl
+            w-14 aspect-square bg-white rounded-md border border-gray-400
+            flex items-center justify-center text-3xl select-none
           "
+          whileTap={{ scale: cell ? 1 : 0.9 }}
         >
-          {cell ? BUILDINGS.find((b) => b.type === cell)?.emoji : ''}
-        </button>
+          {cell ? (
+            // ★ 建物はポップイン
+            <motion.span
+              initial={{ scale: 0, rotate: -30, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0,   opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+            >
+              {BUILDINGS.find(b => b.type === cell)!.emoji}
+            </motion.span>
+          ) : null}
+        </motion.button>
       ))}
     </div>
   );
